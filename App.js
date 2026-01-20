@@ -2,20 +2,32 @@ import { useState } from 'react';
 import { StyleSheet, Text, View, Button, FlatList, TextInput } from 'react-native';
 
 export default function App() {
+  //setItem & setTasks are functions, can be used within onChangeText, onPress
+  //but if too many things to do beside just update the current value, then we make a new function and pass it to onPress etc
   const [item, setItem] = useState("");
-  const [items, setItems] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
-  const addItem = () => {
-    setItems([...items, {key: Date.now().toString(), value: item.trim()}]);
+  const addTask = () => {
+    //object has 3 props
+    const newTask = {
+      key: Date.now().toString(), 
+      text: item.trim(), 
+      completed: false
+    };
+    setTasks([...tasks, newTask]); //setTasks accepts Direct Value (next state), a new array in this case created by using array spread to add new item
     setItem("");
   };
 
-  const deleteItem = (itemKey) => {
-    setItems(prevData => prevData.filter(item => item.key !== itemKey));
+  const deleteTask = (itemKey) => {
+    setTasks(prevData => prevData.filter(item => item.key !== itemKey)); //setTasks accepts Updater Function (prev state). syntax: prev => newState
   };
 
-  const clearAllItems = () => {
-    setItems([]);
+  const markComplete = (itemKey) => {
+    setTasks(prevData => prevData.map((item) => (item.key === itemKey ? {...item, completed: !item.completed} : item))); //object spread syntax to access object property
+  }
+
+  const clearAllTasks = () => {
+    setTasks([]);
   };
 
   return (
@@ -26,22 +38,34 @@ export default function App() {
         style={styles.input}
         placeholder="Enter a task"
         value={item}
-        onChangeText={setItem}></TextInput>
+        onChangeText={setItem}></TextInput> 
         <Button 
           title="Add Task" 
-          onPress={addItem} 
+          onPress={addTask} 
           color="green"></Button>
       </View>
       
       <FlatList
-        data={items}
+        data={tasks}
         keyExtractor={(item) => item.key} 
         renderItem={({ item }) => (
           <View style={styles.listItem}>
-            <Text style={styles.listItemText}>{item.value}</Text>
+            <Text 
+              style={[
+                styles.listItemText,
+                item.completed && styles.completedTask
+              ]}
+            >
+              {item.text}
+            </Text>
+            <Button 
+              title= "Completed"
+              onPress={() => markComplete(item.key)}
+              color="green">
+            </Button>
             <Button 
               title= "Delete"
-              onPress={() => deleteItem(item.key)} 
+              onPress={() => deleteTask(item.key)} //why () here?
               color="red"
               ></Button>
           </View>
@@ -49,7 +73,7 @@ export default function App() {
 
         <Button  
           title="Clear All Tasks" 
-          onPress={clearAllItems} 
+          onPress={clearAllTasks} 
           color="red"></Button>
     </View>
   );
@@ -104,4 +128,9 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 14,
   },
+  completedTask: {
+    textDecorationLine: 'line-through', 
+    color: 'gray', 
+  }
+
 });
