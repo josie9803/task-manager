@@ -1,11 +1,18 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View, Button, FlatList, TextInput } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Pressable, Button, FlatList, TextInput } from 'react-native';
 
 export default function App() {
   //setItem & setTasks are functions, can be used within onChangeText, onPress
   //but if too many things to do beside just update the current value, then we make a new function and pass it to onPress etc
   const [item, setItem] = useState("");
   const [tasks, setTasks] = useState([]);
+  const [filter, setFilter] = useState("All");
+
+  const filteredTasks = () => {
+    if (filter === "Completed") {return tasks.filter(task => task.completed);}
+    if (filter === "Incomplete") {return tasks.filter(task => !task.completed);}
+    return tasks;
+  }
 
   const addTask = () => {
     //object has 3 props
@@ -33,23 +40,49 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Task Manager</Text>
+      <View style={styles.filterRow}>
+        <Pressable onPress={() => setFilter("All")} 
+                  style={({pressed}) => [
+                      styles.filterdButton,
+                      pressed && styles.filterButtonPressed,
+                      filter === "All" && styles.filterButtonActive,
+                    ]}>
+          <Text style={[styles.filterdButtonText, filter === "All" && styles.filterButtonTextActive]}>All</Text>
+        </Pressable>
+        <Pressable onPress={() => setFilter("Completed")} 
+                  style={({pressed}) => [
+                      styles.filterdButton,
+                      pressed && styles.filterButtonPressed,
+                      filter === "Completed" && styles.filterButtonActive, 
+                    ]}>
+          <Text style={[styles.filterdButtonText, filter === "Completed" && styles.filterButtonTextActive]}>Completed</Text>
+        </Pressable>
+        <Pressable onPress={() => setFilter("Incomplete")}
+                  style={({pressed}) => [
+                    styles.filterdButton,
+                    pressed && styles.filterButtonPressed,
+                    filter === "Incomplete" && styles.filterButtonActive, 
+                  ]}>
+          <Text style={[styles.filterdButtonText, filter === "Incomplete" && styles.filterButtonTextActive]}>Incomplete</Text>
+        </Pressable>
+      </View>
       <View style={styles.inputRow}>
         <TextInput
         style={styles.input}
         placeholder="Enter a task"
         value={item}
         onChangeText={setItem}></TextInput> 
-        <Button 
-          title="Add Task" 
-          onPress={addTask} 
-          color="green"></Button>
+        <Pressable onPress={addTask} disabled={!item.trim()} 
+                  style={[styles.addButton, !item.trim() && styles.addButtonDisabled]}>
+            <Text style={styles.addButtonText}>Add</Text>
+        </Pressable>
       </View>
       
       <FlatList
-        data={tasks}
+        data={filteredTasks()}
         keyExtractor={(item) => item.key} 
         renderItem={({ item }) => (
-          <View style={styles.listItem}>
+          <View style={[styles.listItem, item.completed && styles.completedRow]}>
             <Text 
               style={[
                 styles.listItemText,
@@ -58,23 +91,18 @@ export default function App() {
             >
               {item.text}
             </Text>
-            <Button 
-              title= "Completed"
-              onPress={() => markComplete(item.key)}
-              color="green">
-            </Button>
-            <Button 
-              title= "Delete"
-              onPress={() => deleteTask(item.key)} //why () here?
-              color="red"
-              ></Button>
+            <Pressable onPress={() => markComplete(item.key)} style={styles.markCompleteButton}>
+              <Text style={styles.markCompleteText}>{item.completed ? "Completed ✓" : "Complete"}</Text>
+            </Pressable>
+            <Pressable onPress={() => deleteTask(item.key)} style={styles.deleteButton}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </Pressable>
           </View>
         )}></FlatList>
 
-        <Button  
-          title="Clear All Tasks" 
-          onPress={clearAllTasks} 
-          color="red"></Button>
+        <Pressable onPress={clearAllTasks} style={styles.clearButton}>
+          <Text style={styles.clearButtonText}>Clear All Tasks</Text>
+        </Pressable>
     </View>
   );
 }
@@ -83,41 +111,72 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 50,
   },
   title: {
-    color: 'black',
-    fontSize: 30,
-    fontWeight: 'bold'
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   inputRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    width: '80%',
+    marginBottom: 12,
   },
   input: {
     flex: 1,
-    height: 40,
-    marginRight: 8,
-    width: '80%',
-    margin: 12,
     borderWidth: 1,
-    padding: 10,
     borderColor: 'gray',
     borderRadius: 5,
+    padding: 10,
+    marginRight: 10,
   },
-  listItem: {
-    backgroundColor: '#ffffff', 
+  addButton: {
+    backgroundColor: "#28a745",
+    padding: 10,
+    borderRadius: 5,
+  },
+  addButtonDisabled: {
+    backgroundColor: "#bdbdbd",
+  },
+  addButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  filterdButton: {
+    borderWidth: 1,
+    borderColor: "#6495ED",
+    padding: 10,
+    borderRadius: 5,
+  },
+  filterButtonPressed: {
+    backgroundColor: "#bcd4ff", // ⭐ when finger is pressing
+  },
+
+  filterButtonActive: {
+    backgroundColor: "#6495ED", // ⭐ selected filter
+  },
+  filterdButtonText: {
+    color: "#6495ED",
+    fontWeight: "bold",
+  },
+  filterButtonTextActive: {
+    color: "white",
+  },
+   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  listItem: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    borderRadius: 5,
+    marginVertical: 6,
+    borderRadius: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -125,12 +184,46 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   listItemText: {
-    color: 'black',
-    fontSize: 14,
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 10,
+    textAlign: "left",
   },
   completedTask: {
     textDecorationLine: 'line-through', 
     color: 'gray', 
-  }
-
+  },
+  markCompleteButton: {
+    backgroundColor: "#28a745",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 5,
+    marginRight: 6, 
+  },
+  markCompleteText: {
+    color: "white",
+  },
+  completedRow: {
+    opacity: 0.5,
+  },
+  deleteButton: {
+    backgroundColor: "#dc3545",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 5,
+  },
+  deleteButtonText: {
+    color: "white",
+  },
+  clearButton: {
+    marginTop: 20,
+    backgroundColor: "#ffc107",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  clearButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
 });
